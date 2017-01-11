@@ -1,3 +1,6 @@
+var connection = require('./config');
+connection = connection.connection;
+
 var db = function(){
   this.sql= "";
   this.table = "";
