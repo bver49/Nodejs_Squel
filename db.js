@@ -337,14 +337,4 @@ db.prototype.test = function (){
   this.init();
 };
 
-var x ={
-  'dpt':'IIM'
-}
-
-var d = new db();
-
-d.select().field("*").from("course").where("id=1233").order("id").limit(10).test();
-d.insert().into("s").set(x).test();
-d.delete().from("student").where("name=3").where("x>5").test();
-d.update().table("user").where("id=5").set(x).test();
-d.select().field("student.classid").field("student.id").from("student").join("class").where("student.classid=class.id").test();
+module.exports = db;
