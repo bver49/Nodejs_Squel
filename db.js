@@ -337,4 +337,11 @@ db.prototype.test = function (){
   this.init();
 };
 
+db.prototype.sql = function(sql,callback) {
+  connection.query(sql,function(err, results, fields){
+    if (err) throw err;
+    callback(results);
+  });
+};
+
 module.exports = db;
