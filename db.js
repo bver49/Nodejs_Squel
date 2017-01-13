@@ -1,4 +1,4 @@
-//var connection = require('./config');
+//var connection = require('../config');
 //connection = connection.connection;
 
 var start;
@@ -53,8 +53,34 @@ db.prototype.field = function (field){
   return this;
 };
 
-db.prototype.where = function(condition) {
-  this.condition.push(condition);
+db.prototype.where = function(condition,value) {
+  if(value === undefined) {
+    this.condition.push(condition);
+  }
+  else{
+    if(typeof value == "string"){
+      this.condition.push(condition+"'"+value+"'");
+    }
+    else if(typeof value == "object"){
+      var _in = " (";
+      for(var i in value){
+        if(typeof value[i] == "string"){
+          _in += "'"+value[i]+"'";
+        }
+        else{
+          _in += value[i];
+        }
+        if( i != value.length-1 ){
+          _in += ",";
+        }
+      }
+      _in += ")";
+      this.condition.push(condition+_in);
+    }
+    else{
+      this.condition.push(condition+value);
+    }
+  }
   return this;
 };
 
@@ -234,10 +260,10 @@ db.prototype.ConditionBuilder = function() {
   }
   for(var i in this.condition){
     if(i == this.condition.length-1){
-      this.sql += "("+this.condition[i]+")";
+      this.sql += this.condition[i];
     }
     else{
-      this.sql += ("("+this.condition[i]+")"+ " AND ");
+      this.sql += this.condition[i]+ " AND ";
     }
   }
 };
@@ -263,7 +289,7 @@ db.prototype.run = function (callback){
       console.log("Error");
       break;
   }
-  console.log(this.sql);
+  console.log("\n"+this.sql);
   var sql = this.sql;
   end = new Date().getTime();
   var time = end - start;
@@ -334,6 +360,7 @@ db.prototype.test = function (){
   end = new Date().getTime();
   var time = end - start;
   console.log("Execute time: "+time+" ms");
+  console.log("");
   this.init();
 };
 
