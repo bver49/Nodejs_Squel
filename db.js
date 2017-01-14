@@ -1,3 +1,11 @@
+/*
+SELECT 1
+INSERT 2
+DELETE 3
+UPDATE 4
+*/
+
+var chalk = require('chalk');
 //var connection = require('../config');
 //connection = connection.connection;
 
@@ -44,13 +52,23 @@ db.prototype.select = function(){
 };
 
 db.prototype.from = function (table) {
-  this.tableName = table;
-  return this;
+  if(this.sqlType != 1 && this.sqlType != 3){
+    throw chalk.red("Error: from() Must follow with select() or delete()");
+  }
+  else{
+    this.tableName = table;
+    return this;
+  }
 };
 
 db.prototype.field = function (field){
-  this.fieldList.push(field);
-  return this;
+  if(this.sqlType != 1){
+    throw chalk.red("Error: field() Must follow with select()");
+  }
+  else{
+    this.fieldList.push(field);
+    return this;
+  }
 };
 
 db.prototype.where = function(condition,value) {
@@ -116,21 +134,31 @@ db.prototype.insert = function (){
 };
 
 db.prototype.into = function (table){
-  this.sql += "INTO "+table;
-  return this;
+  if(this.sqlType != 2){
+    throw chalk.red("Error: into() Must follow with insert()");
+  }
+  else{
+    this.sql += "INTO "+table;
+    return this;
+  }
 };
 
 db.prototype.set = function (data){
-  for(var i in data){
-    this.datakey.push(i);
-    if(typeof data[i] === "string"){
-      this.datavalue.push("'"+data[i]+"'");
-    }
-    else{
-      this.datavalue.push(data[i]);
-    }
+  if(this.sqlType != 2 && this.sqlType != 4 ){
+    throw chalk.red("Error: set() Must follow with insert() or update()");
   }
-  return this;
+  else{
+    for(var i in data){
+      this.datakey.push(i);
+      if(typeof data[i] === "string"){
+        this.datavalue.push("'"+data[i]+"'");
+      }
+      else{
+        this.datavalue.push(data[i]);
+      }
+    }
+    return this;
+  }
 };
 
 db.prototype.InsertQueryBuilder = function (){
@@ -185,8 +213,13 @@ db.prototype.update = function (){
 }
 
 db.prototype.table = function (table) {
-  this.tableName = table;
-  return this;
+  if(this.sqlType != 4 ){
+    throw chalk.red("Error: table() Must follow with update()");
+  }
+  else{
+    this.tableName = table;
+    return this;
+  }
 };
 
 db.prototype.UpdateQueryBuilder = function(){
@@ -207,7 +240,6 @@ db.prototype.UpdateQueryBuilder = function(){
 /* innerjoin */
 db.prototype.join = function (table){
   this.joinTable = table;
-  this.sqlType = 5;
   return this;
 };
 
@@ -252,7 +284,7 @@ db.prototype.limit = function(number) {
 
 db.prototype.ConditionBuilder = function() {
 
-  if(this.sqlType == 5 ){
+  if(this.joinTable != "" ){
     this.sql += " ON ";
   }
   else{
@@ -271,7 +303,12 @@ db.prototype.ConditionBuilder = function() {
 db.prototype.run = function (callback){
   switch (this.sqlType) {
     case 1:
-      this.SelectQueryBuilder();
+      if(this.joinTable != ""){
+        this.JoinQueryBuilder();
+      }
+      else{
+        this.SelectQueryBuilder();
+      }
       break;
     case 2:
       this.InsertQueryBuilder();
@@ -282,8 +319,75 @@ db.prototype.run = function (callback){
     case 4:
       this.UpdateQueryBuilder();
       break;
-    case 5:
-      this.JoinQueryBuilder();
+    default:
+      throw "Error";
+      break;
+  }
+  console.log("\n"+this.sql);
+  var sql = this.sql;
+  this.init();
+  connection.query(sql,function(err, results, fields){
+    if (err) throw err;
+    end = new Date().getTime();
+    var time = end - start;
+    console.log(chalk.green("Execute time: "+time+" ms"));
+    callback(results);
+  });
+};
+
+db.prototype.get = function (callback){
+  switch (this.sqlType) {
+    case 1:
+      if(this.joinTable != ""){
+        this.JoinQueryBuilder();
+      }
+      else{
+        this.SelectQueryBuilder();
+      }
+      break;
+    case 2:
+      this.InsertQueryBuilder();
+      break;
+    case 3:
+      this.DeleteQueryBuilder();
+      break;
+    case 4:
+      this.UpdateQueryBuilder();
+      break;
+    default:
+      console.log("Error");
+      break;
+  }
+  console.log("\n"+this.sql);
+  var sql = this.sql;
+  this.init();
+  connection.query(sql,function(err, results, fields){
+    if (err) throw err;
+    end = new Date().getTime();
+    var time = end - start;
+    console.log(chalk.green("Execute time: "+time+" ms"));
+    return results;
+  });
+};
+
+db.prototype.test = function (){
+  switch (this.sqlType) {
+    case 1:
+      if(this.joinTable != ""){
+        this.JoinQueryBuilder();
+      }
+      else{
+        this.SelectQueryBuilder();
+      }
+      break;
+    case 2:
+      this.InsertQueryBuilder();
+      break;
+    case 3:
+      this.DeleteQueryBuilder();
+      break;
+    case 4:
+      this.UpdateQueryBuilder();
       break;
     default:
       console.log("Error");
@@ -293,74 +397,7 @@ db.prototype.run = function (callback){
   var sql = this.sql;
   end = new Date().getTime();
   var time = end - start;
-  console.log("Execute time: "+time+" ms");
-  this.init();
-  connection.query(sql,function(err, results, fields){
-    if (err) throw err;
-    callback(results);
-  });
-};
-
-db.prototype.get = function (callback){
-  switch (this.sqlType) {
-    case 1:
-      this.SelectQueryBuilder();
-      break;
-    case 2:
-      this.InsertQueryBuilder();
-      break;
-    case 3:
-      this.DeleteQueryBuilder();
-      break;
-    case 4:
-      this.UpdateQueryBuilder();
-      break;
-    case 5:
-      this.JoinQueryBuilder();
-      break;
-    default:
-      console.log("Error");
-      break;
-  }
-  console.log(this.sql);
-  var sql = this.sql;
-  end = new Date().getTime();
-  var time = end - start;
-  console.log("Execute time: "+time+" ms");
-  this.init();
-  connection.query(sql,function(err, results, fields){
-    if (err) throw err;
-    return results;
-  });
-};
-
-db.prototype.test = function (){
-  switch (this.sqlType) {
-    case 1:
-      this.SelectQueryBuilder();
-      break;
-    case 2:
-      this.InsertQueryBuilder();
-      break;
-    case 3:
-      this.DeleteQueryBuilder();
-      break;
-    case 4:
-      this.UpdateQueryBuilder();
-      break;
-    case 5:
-      this.JoinQueryBuilder();
-      break;
-    default:
-      console.log("Error");
-      break;
-  }
-  console.log(this.sql);
-  var sql = this.sql;
-  end = new Date().getTime();
-  var time = end - start;
-  console.log("Execute time: "+time+" ms");
-  console.log("");
+  console.log(chalk.green("Execute time: "+time+" ms"));
   this.init();
 };
 
