@@ -20,4 +20,6 @@ db.select().field("*").from("course").where("id=",1233).order("id").limit(10).te
 db.select().field("*").from("course").where("id=","name").order("id").limit(10).test();
 db.select().field("*").from("course").where("name IN",["a","b","c"]).where("id=","name").where("id=x").order("id").limit(10).test();
 
-db.select().into().test();
+//db.select().into().test();
+
+db.select().field("*").from("user").where("status IN",[0,1]).test();

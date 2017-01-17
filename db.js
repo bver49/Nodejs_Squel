@@ -6,7 +6,7 @@ UPDATE 4
 */
 
 var chalk = require('chalk');
-//var connection = require('../config');
+//var connection = require('./config');
 //connection = connection.connection;
 
 var start;
@@ -66,7 +66,14 @@ db.prototype.field = function (field){
     throw chalk.red("Error: field() Must follow with select()");
   }
   else{
-    this.fieldList.push(field);
+    if(typeof field == "object"){
+      for(var i in field){
+        this.fieldList.push(field[i]);
+      }
+    }
+    else{
+      this.fieldList.push(field);
+    }
     return this;
   }
 };
@@ -278,7 +285,7 @@ db.prototype.order = function(order,type) {
 }
 
 db.prototype.limit = function(number) {
-  this.limitAmt += "LIMIT "+number;
+  this.limitAmt += " LIMIT "+number;
   return this;
 };
 
@@ -327,11 +334,10 @@ db.prototype.run = function (callback){
   var sql = this.sql;
   this.init();
   connection.query(sql,function(err, results, fields){
-    if (err) throw err;
     end = new Date().getTime();
     var time = end - start;
     console.log(chalk.green("Execute time: "+time+" ms"));
-    callback(results);
+    callback(results,err);
   });
 };
 
