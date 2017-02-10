@@ -6,8 +6,8 @@ UPDATE 4
 */
 
 var chalk = require('chalk');
-//var connection = require('./config');
-//connection = connection.connection;
+var connection = require('./config');
+connection = connection.connection;
 
 var start;
 var end;
@@ -19,7 +19,7 @@ var db = function(){
   this.tableName = "";
   this.fieldList = [];
   this.condition = [];
-  this.orderby = "";
+  this.orderby = [];
   /* INSERT */
   this.datakey =[];
   this.datavalue =[];
@@ -35,7 +35,7 @@ db.prototype.init = function () {
   this.tableName = "";
   this.fieldList = [];
   this.condition = [];
-  this.orderby = "";
+  this.orderby = [];
   /* INSERT */
   this.datakey =[];
   this.datavalue =[];
@@ -124,8 +124,16 @@ db.prototype.SelectQueryBuilder = function(){
     this.ConditionBuilder();
   }
 
-  if(this.orderby !=""){
-    this.sql += this.orderby;
+  if(this.orderby.length != 0){
+    this.sql += " ORDER BY ";
+    for(var i in this.orderby){
+      if( i == this.orderby.length-1){
+        this.sql += this.orderby[i]+" ";
+      }
+      else{
+        this.sql += this.orderby[i]+" , ";
+      }
+    }
   }
   if(this.limitAmt !=""){
     this.sql += this.limitAmt;
@@ -204,8 +212,16 @@ db.prototype.DeleteQueryBuilder = function (){
   if(this.condition.length > 0){
     this.ConditionBuilder();
   }
-  if(this.orderby !=""){
-    this.sql += this.orderby;
+  if(this.orderby.length != 0){
+    this.sql += " ORDER BY ";
+    for(var i in this.orderby){
+      if( i == this.orderby.length-1){
+        this.sql += this.orderby[i]+" ";
+      }
+      else{
+        this.sql += this.orderby[i]+" , ";
+      }
+    }
   }
   if(this.limitAmt !=""){
     this.sql += this.limitAmt;
@@ -265,8 +281,16 @@ db.prototype.JoinQueryBuilder = function() {
   if(this.condition.length > 0){
     this.ConditionBuilder();
   }
-  if(this.orderby !=""){
-    this.sql += this.orderby;
+  if(this.orderby.length != 0){
+    this.sql += " ORDER BY ";
+    for(var i in this.orderby){
+      if( i == this.orderby.length-1){
+        this.sql += this.orderby[i]+" ";
+      }
+      else{
+        this.sql += this.orderby[i]+" , ";
+      }
+    }
   }
   if(this.limitAmt !=""){
     this.sql += this.limitAmt;
@@ -275,17 +299,17 @@ db.prototype.JoinQueryBuilder = function() {
 
 db.prototype.order = function(order,type) {
   if(type === undefined) {
-    type = true;
+    type = "ASC";
   }
   else{
-    type = false;
+    type = "DESC";
   }
-  this.orderby = " ORDER BY " + order + ((type) ? " DESC ": " ASC ");
+  this.orderby.push(order+" "+type);
   return this;
 }
 
 db.prototype.limit = function(number) {
-  this.limitAmt += " LIMIT "+number;
+  this.limitAmt += "LIMIT "+number;
   return this;
 };
 
