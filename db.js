@@ -35,7 +35,6 @@ function handleDisconnect() {
 }
 
 handleDisconnect();
-connection = connection.connection;
 
 var start;
 var end;
