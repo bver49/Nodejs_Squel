@@ -4,14 +4,42 @@ INSERT 2
 DELETE 3
 UPDATE 4
 */
-
+var mysql = require('mysql');
 var chalk = require('chalk');
-var connection = require('./config');
+var config = require('./config');
+var db_config = {
+  host: config.dbhost,
+  user: config.dbuser,
+  password: config.dbpw,
+  database: config.dbname
+};
+
+var connection;
+
+function handleDisconnect() {
+  connection = mysql.createConnection(db_config);
+  connection.connect(function(err) {
+    if (err) {
+      console.log('error when connecting to db: ', err);
+      setTimeout(handleDisconnect, 2000);
+    }
+  });
+  connection.on('error', function(err) {
+    console.log('db error', err);
+    if (err.code === 'PROTOCOL_CONNECTION_LOST') {
+      handleDisconnect();
+    } else {
+      throw err;
+    }
+  });
+}
+
+handleDisconnect();
 connection = connection.connection;
 
 var start;
 var end;
-var db = function(){
+var db = function() {
   this.sql = "";
   this.sqlType = 0;
   this.limitAmt = "";
@@ -21,13 +49,13 @@ var db = function(){
   this.condition = [];
   this.orderby = [];
   /* INSERT */
-  this.datakey =[];
-  this.datavalue =[];
+  this.datakey = [];
+  this.datavalue = [];
   /* Join */
   this.joinTable = "";
 }
 
-db.prototype.init = function () {
+db.prototype.init = function() {
   this.sql = "";
   this.sqlType = 0;
   this.limitAmt = "";
@@ -37,145 +65,133 @@ db.prototype.init = function () {
   this.condition = [];
   this.orderby = [];
   /* INSERT */
-  this.datakey =[];
-  this.datavalue =[];
+  this.datakey = [];
+  this.datavalue = [];
   /* Join */
   this.joinTable = "";
 };
 
 /* SELECT */
-db.prototype.select = function(){
+db.prototype.select = function() {
   start = new Date().getTime();
   this.sql += "SELECT ";
   this.sqlType = 1;
   return this;
 };
 
-db.prototype.from = function (table) {
-  if(this.sqlType != 1 && this.sqlType != 3){
+db.prototype.from = function(table) {
+  if (this.sqlType != 1 && this.sqlType != 3) {
     throw chalk.red("Error: from() Must follow with select() or delete()");
-  }
-  else{
+  } else {
     this.tableName = table;
     return this;
   }
 };
 
-db.prototype.field = function (field){
-  if(this.sqlType != 1){
+db.prototype.field = function(field) {
+  if (this.sqlType != 1) {
     throw chalk.red("Error: field() Must follow with select()");
-  }
-  else{
-    if(typeof field == "object"){
-      for(var i in field){
+  } else {
+    if (typeof field == "object") {
+      for (var i in field) {
         this.fieldList.push(field[i]);
       }
-    }
-    else{
+    } else {
       this.fieldList.push(field);
     }
     return this;
   }
 };
 
-db.prototype.where = function(condition,value) {
-  if(typeof value === "undefined") {
+db.prototype.where = function(condition, value) {
+  if (typeof value === "undefined") {
     this.condition.push(condition);
-  }
-  else{
-    if(typeof value == "string"){
-      this.condition.push(condition+"'"+value+"'");
-    }
-    else if(typeof value == "object"){
+  } else {
+    if (typeof value == "string") {
+      this.condition.push(condition + "'" + value + "'");
+    } else if (typeof value == "object") {
       var _in = " (";
-      for(var i in value){
-        if(typeof value[i] == "string"){
-          _in += "'"+value[i]+"'";
-        }
-        else{
+      for (var i in value) {
+        if (typeof value[i] == "string") {
+          _in += "'" + value[i] + "'";
+        } else {
           _in += value[i];
         }
-        if( i != value.length-1 ){
+        if (i != value.length - 1) {
           _in += ",";
         }
       }
       _in += ")";
-      this.condition.push(condition+_in);
-    }
-    else{
-      this.condition.push(condition+value);
+      this.condition.push(condition + _in);
+    } else {
+      this.condition.push(condition + value);
     }
   }
   return this;
 };
 
-db.prototype.whereCheck = function(condition,value) {
-  if(value !== null){
+db.prototype.whereCheck = function(condition, value) {
+  if (value !== null) {
     this.condition.push(condition);
   }
   return this;
 };
 
-db.prototype.SelectQueryBuilder = function(){
-  for(var i in this.fieldList){
-    if(i == this.fieldList.length-1){
-      this.sql += this.fieldList[i]+" ";
-    }
-    else{
+db.prototype.SelectQueryBuilder = function() {
+  for (var i in this.fieldList) {
+    if (i == this.fieldList.length - 1) {
+      this.sql += this.fieldList[i] + " ";
+    } else {
       this.sql += (this.fieldList[i] + ",");
     }
   }
 
   this.sql += "FROM " + this.tableName;
-  if(this.condition.length > 0){
+  if (this.condition.length > 0) {
     this.ConditionBuilder();
   }
 
-  if(this.orderby.length != 0){
+  if (this.orderby.length != 0) {
     this.sql += " ORDER BY ";
-    for(var i in this.orderby){
-      if( i == this.orderby.length-1){
-        this.sql += this.orderby[i]+" ";
-      }
-      else{
-        this.sql += this.orderby[i]+" , ";
+    for (var i in this.orderby) {
+      if (i == this.orderby.length - 1) {
+        this.sql += this.orderby[i] + " ";
+      } else {
+        this.sql += this.orderby[i] + " , ";
       }
     }
   }
-  if(this.limitAmt !=""){
+  if (this.limitAmt != "") {
     this.sql += this.limitAmt;
   }
 }
 
 /* INSERT */
-db.prototype.insert = function (){
+db.prototype.insert = function() {
   start = new Date().getTime();
   this.sql += "INSERT ";
   this.sqlType = 2;
   return this;
 };
 
-db.prototype.into = function (table){
-  if(this.sqlType != 2){
+db.prototype.into = function(table) {
+  if (this.sqlType != 2) {
     throw chalk.red("Error: into() Must follow with insert()");
-  }
-  else{
-    this.sql += "INTO "+table;
+  } else {
+    this.sql += "INTO " + table;
     return this;
   }
 };
 
-db.prototype.set = function (data){
-  if(this.sqlType != 2 && this.sqlType != 4 ){
+db.prototype.set = function(data) {
+  if (this.sqlType != 2 && this.sqlType != 4) {
     throw chalk.red("Error: set() Must follow with insert() or update()");
-  }
-  else{
-    for(var i in data){
+  } else {
+    for (var i in data) {
       this.datakey.push(i);
-      if(typeof data[i] === "string"){
-        this.datavalue.push("'"+data[i]+"'");
-      }
-      else{
+      if (typeof data[i] === "string") {
+        this.datavalue.push("'" + data[i] + "'");
+      } else {
         this.datavalue.push(data[i]);
       }
     }
@@ -183,168 +199,157 @@ db.prototype.set = function (data){
   }
 };
 
-db.prototype.InsertQueryBuilder = function (){
-  this.sql +=" (";
-  for(var i in this.datakey){
-    if(i == this.datakey.length-1){
+db.prototype.InsertQueryBuilder = function() {
+  this.sql += " (";
+  for (var i in this.datakey) {
+    if (i == this.datakey.length - 1) {
       this.sql += this.datakey[i];
-    }
-    else{
-      this.sql += this.datakey[i]+",";
+    } else {
+      this.sql += this.datakey[i] + ",";
     }
   }
-  this.sql +=") VALUE (";
-  for(var i in this.datavalue){
-    if(i == this.datavalue.length-1){
+  this.sql += ") VALUE (";
+  for (var i in this.datavalue) {
+    if (i == this.datavalue.length - 1) {
       this.sql += this.datavalue[i];
-    }
-    else{
-      this.sql += this.datavalue[i]+",";
+    } else {
+      this.sql += this.datavalue[i] + ",";
     }
   }
-  this.sql +=") ";
+  this.sql += ") ";
 };
 
 /* DELETE */
-db.prototype.delete = function(){
+db.prototype.delete = function() {
   start = new Date().getTime();
   this.sql += "DELETE ";
   this.sqlType = 3;
   return this;
 };
 
-db.prototype.DeleteQueryBuilder = function (){
+db.prototype.DeleteQueryBuilder = function() {
 
   this.sql += "FROM " + this.tableName;
-  if(this.condition.length > 0){
+  if (this.condition.length > 0) {
     this.ConditionBuilder();
   }
-  if(this.orderby.length != 0){
+  if (this.orderby.length != 0) {
     this.sql += " ORDER BY ";
-    for(var i in this.orderby){
-      if( i == this.orderby.length-1){
-        this.sql += this.orderby[i]+" ";
-      }
-      else{
-        this.sql += this.orderby[i]+" , ";
+    for (var i in this.orderby) {
+      if (i == this.orderby.length - 1) {
+        this.sql += this.orderby[i] + " ";
+      } else {
+        this.sql += this.orderby[i] + " , ";
       }
     }
   }
-  if(this.limitAmt !=""){
+  if (this.limitAmt != "") {
     this.sql += this.limitAmt;
   }
 };
 
 /* UPDATE */
-db.prototype.update = function (){
+db.prototype.update = function() {
   this.sql += "UPDATE ";
   this.sqlType = 4;
   return this;
 }
 
-db.prototype.table = function (table) {
-  if(this.sqlType != 4 ){
+db.prototype.table = function(table) {
+  if (this.sqlType != 4) {
     throw chalk.red("Error: table() Must follow with update()");
-  }
-  else{
+  } else {
     this.tableName = table;
     return this;
   }
 };
 
-db.prototype.UpdateQueryBuilder = function(){
-  this.sql += this.tableName+" ";
-  this.sql += "SET ";
-  for(var i in this.datakey){
-    if(i == this.datakey.length-1){
-      this.sql += (this.datakey[i]+"="+this.datavalue[i]);
+db.prototype.UpdateQueryBuilder = function() {
+    this.sql += this.tableName + " ";
+    this.sql += "SET ";
+    for (var i in this.datakey) {
+      if (i == this.datakey.length - 1) {
+        this.sql += (this.datakey[i] + "=" + this.datavalue[i]);
+      } else {
+        this.sql += (this.datakey[i] + "=" + this.datavalue[i] + ",");
+      }
     }
-    else{
-      this.sql += (this.datakey[i]+"="+this.datavalue[i]+",");
+    if (this.condition.length > 0) {
+      this.ConditionBuilder();
     }
   }
-  if(this.condition.length > 0){
-    this.ConditionBuilder();
-  }
-}
-/* innerjoin */
-db.prototype.join = function (table){
+  /* innerjoin */
+db.prototype.join = function(table) {
   this.joinTable = table;
   return this;
 };
 
 db.prototype.JoinQueryBuilder = function() {
 
-  for(var i in this.fieldList){
-    if(i == this.fieldList.length-1){
-      this.sql += this.fieldList[i]+" ";
-    }
-    else{
+  for (var i in this.fieldList) {
+    if (i == this.fieldList.length - 1) {
+      this.sql += this.fieldList[i] + " ";
+    } else {
       this.sql += (this.fieldList[i] + ",");
     }
   }
   this.sql += "FROM " + this.tableName + " INNER JOIN " + this.joinTable;
 
-  if(this.condition.length > 0){
+  if (this.condition.length > 0) {
     this.ConditionBuilder();
   }
-  if(this.orderby.length != 0){
+  if (this.orderby.length != 0) {
     this.sql += " ORDER BY ";
-    for(var i in this.orderby){
-      if( i == this.orderby.length-1){
-        this.sql += this.orderby[i]+" ";
-      }
-      else{
-        this.sql += this.orderby[i]+" , ";
+    for (var i in this.orderby) {
+      if (i == this.orderby.length - 1) {
+        this.sql += this.orderby[i] + " ";
+      } else {
+        this.sql += this.orderby[i] + " , ";
       }
     }
   }
-  if(this.limitAmt !=""){
+  if (this.limitAmt != "") {
     this.sql += this.limitAmt;
   }
 };
 
-db.prototype.order = function(order,type) {
-  if(type === undefined) {
+db.prototype.order = function(order, type) {
+  if (type === undefined) {
     type = "ASC";
-  }
-  else{
+  } else {
     type = "DESC";
   }
-  this.orderby.push(order+" "+type);
+  this.orderby.push(order + " " + type);
   return this;
 }
 
 db.prototype.limit = function(number) {
-  this.limitAmt += "LIMIT "+number;
+  this.limitAmt += "LIMIT " + number;
   return this;
 };
 
 db.prototype.ConditionBuilder = function() {
 
-  if(this.joinTable != "" ){
+  if (this.joinTable != "") {
     this.sql += " ON ";
-  }
-  else{
+  } else {
     this.sql += " WHERE ";
   }
-  for(var i in this.condition){
-    if(i == this.condition.length-1){
+  for (var i in this.condition) {
+    if (i == this.condition.length - 1) {
       this.sql += this.condition[i];
-    }
-    else{
-      this.sql += this.condition[i]+ " AND ";
+    } else {
+      this.sql += this.condition[i] + " AND ";
     }
   }
 };
 
-db.prototype.run = function (callback){
+db.prototype.run = function(callback) {
   switch (this.sqlType) {
     case 1:
-      if(this.joinTable != ""){
+      if (this.joinTable != "") {
         this.JoinQueryBuilder();
-      }
-      else{
+      } else {
         this.SelectQueryBuilder();
       }
       break;
@@ -361,24 +366,23 @@ db.prototype.run = function (callback){
       throw "Error";
       break;
   }
-  console.log("\n"+this.sql);
+  console.log("\n" + this.sql);
   var sql = this.sql;
   this.init();
-  connection.query(sql,function(err, results, fields){
+  connection.query(sql, function(err, results, fields) {
     end = new Date().getTime();
     var time = end - start;
-    console.log(chalk.green("Execute time: "+time+" ms"));
-    callback(results,err);
+    console.log(chalk.green("Execute time: " + time + " ms"));
+    callback(results, err);
   });
 };
 
-db.prototype.get = function (callback){
+db.prototype.get = function(callback) {
   switch (this.sqlType) {
     case 1:
-      if(this.joinTable != ""){
+      if (this.joinTable != "") {
         this.JoinQueryBuilder();
-      }
-      else{
+      } else {
         this.SelectQueryBuilder();
       }
       break;
@@ -395,25 +399,24 @@ db.prototype.get = function (callback){
       console.log("Error");
       break;
   }
-  console.log("\n"+this.sql);
+  console.log("\n" + this.sql);
   var sql = this.sql;
   this.init();
-  connection.query(sql,function(err, results, fields){
+  connection.query(sql, function(err, results, fields) {
     if (err) throw err;
     end = new Date().getTime();
     var time = end - start;
-    console.log(chalk.green("Execute time: "+time+" ms"));
+    console.log(chalk.green("Execute time: " + time + " ms"));
     return results;
   });
 };
 
-db.prototype.test = function (){
+db.prototype.test = function() {
   switch (this.sqlType) {
     case 1:
-      if(this.joinTable != ""){
+      if (this.joinTable != "") {
         this.JoinQueryBuilder();
-      }
-      else{
+      } else {
         this.SelectQueryBuilder();
       }
       break;
@@ -430,16 +433,16 @@ db.prototype.test = function (){
       console.log("Error");
       break;
   }
-  console.log("\n"+this.sql);
+  console.log("\n" + this.sql);
   var sql = this.sql;
   end = new Date().getTime();
   var time = end - start;
-  console.log(chalk.green("Execute time: "+time+" ms"));
+  console.log(chalk.green("Execute time: " + time + " ms"));
   this.init();
 };
 
-db.prototype.sql = function(sql,callback) {
-  connection.query(sql,function(err, results, fields){
+db.prototype.sql = function(sql, callback) {
+  connection.query(sql, function(err, results, fields) {
     if (err) throw err;
     callback(results);
   });
