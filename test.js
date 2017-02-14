@@ -6,16 +6,7 @@ var data ={
   'dpt':'IIM'
 }
 
-db.select().field("*").from("course").where("id=1233").order("id").limit(10).test();
+db.select().field(["f.*","c.餘額"]).from("follow f").join("course_105_2 c").where("c.id=f.course_id").test(function(follow){
+});
 
-db.insert().into("s").set(data).test();
-
-db.delete().from("student").where("name=3").where("x>5").test();
-
-db.update().table("user").where("id=5").set(data).test();
-
-db.select().field("student.classid").field("student.id").from("student").join("class").where("student.classid=class.id").where("id=","name").test();
-
-db.select().field("*").from("course").where("id=",1233).order("id").order("id").limit(10).test();
-db.select().field("*").from("course").where("id=","name").order("id").limit(10).test();
-db.select().field("*").from("course").where("name IN",["a","b","c"]).where("id=","name").where("id=x").order("id").limit(10).test();
+db.select().field("*").from("exam").where("tag LIKE '%台大%'").test();
