@@ -1,4 +1,5 @@
-# A mysql module for nodejs
+# Nodejs_Squel
+A mysql module for nodejs
 
 1.npm install
 
