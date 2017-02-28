@@ -38,7 +38,6 @@ handleDisconnect();
 
 var db = {
   'select': function() {
-    var start = new Date().getTime();
     return {
       'from': from,
       'field': field,
@@ -58,13 +57,11 @@ var db = {
         'fieldList': [],
         'condition': [],
         'orderby': [],
-        'joinTable': "",
-        'start': start
+        'joinTable': ""
       }
     }
   },
   'insert': function() {
-    var start = new Date().getTime();
     return {
       'into': into,
       'set': set,
@@ -77,13 +74,11 @@ var db = {
         'tableName': "",
         'condition': [],
         'datakey': [],
-        'datavalue': [],
-        'start': start
+        'datavalue': []
       }
     }
   },
   'delete': function() {
-    var start = new Date().getTime();
     return {
       'from': from,
       'where': where,
@@ -93,13 +88,11 @@ var db = {
         'sql': "DELETE ",
         'sqlType': 3,
         'tableName': "",
-        'condition': [],
-        'start': start
+        'condition': []
       }
     }
   },
   'update': function() {
-    var start = new Date().getTime();
     return {
       'table': table,
       'where': where,
@@ -112,8 +105,7 @@ var db = {
         'tableName': "",
         'condition': [],
         'datakey': [],
-        'datavalue': [],
-        'start': start
+        'datavalue': []
       }
     }
   }
@@ -353,6 +345,7 @@ function ConditionBuilder(obj) {
 }
 
 function run(callback) {
+  var start = new Date().getTime();
   switch (this.sqlobj.sqlType) {
     case 1:
       if (this.sqlobj.joinTable != "") {
@@ -378,13 +371,14 @@ function run(callback) {
   var sql = this.sqlobj.sql;
   connection.query(sql, function(err, results, fields) {
     var end = new Date().getTime();
-    var time = end - this.sqlobj.start;
+    var time = end - start;
     console.log(chalk.green("Execute time: " + time + " ms"));
     callback(results, err);
   });
 }
 
 function get(callback) {
+  var start = new Date().getTime();
   switch (this.sqlobj.sqlType) {
     case 1:
       if (this.sqlobj.joinTable != "") {
@@ -411,13 +405,14 @@ function get(callback) {
   connection.query(sql, function(err, results, fields) {
     if (err) throw err;
     var end = new Date().getTime();
-    var time = end - this.sqlobj.start;
+    var time = end - start;
     console.log(chalk.green("Execute time: " + time + " ms"));
     return results;
   });
 }
 
 function test() {
+  var start = new Date().getTime();
   switch (this.sqlobj.sqlType) {
     case 1:
       if (this.sqlobj.joinTable != "") {
@@ -442,7 +437,7 @@ function test() {
   var sql = this.sqlobj.sql;
   console.log("\n" + sql);
   var end = new Date().getTime();
-  var time = end - this.sqlobj.start;
+  var time = end - start;
   console.log(chalk.green("Execute time: " + time + " ms"));
 }
 
