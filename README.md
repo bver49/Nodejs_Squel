@@ -21,11 +21,11 @@ db.select().field("*").from("user").where("id=1").test();
 
 It should like this
 
-```json
+```
 {
-    dbhost : 'database host',
-    dbuser : 'database user',
-    dbpw : 'database password',
-    dbname : 'database name'
+    'dbhost' : 'database host',
+    'dbuser' : 'database user',
+    'dbpw' : 'database password',
+    'dbname' : 'database name'
 }
 ```
