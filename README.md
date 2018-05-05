@@ -17,22 +17,15 @@ db.select().field("*").from("user").where("id=1").test();
 
 1.npm install
 
-2.Create file name config.js
+2.Create file name config.json
 
 It should like this
 
-```js
-
-exports.dbhost = 'database host';
-exports.dbuser = 'database user';
-exports.dbpw = 'database password';
-exports.dbname = 'database name';
-
-```
-
-## How to use
-
-```js
-
-
+```json
+{
+    dbhost : 'database host',
+    dbuser : 'database user',
+    dbpw : 'database password',
+    dbname : 'database name'
+}
 ```
